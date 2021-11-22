@@ -1,5 +1,6 @@
 import os
 import argparse
+
 import torch
 import torch.nn.parallel
 import torch.optim
@@ -16,41 +17,35 @@ parser = argparse.ArgumentParser(description='PyTorch MS_COCO Training')
 parser.add_argument('--data', type=str, default='/home/MSCOCO_2014/')
 parser.add_argument('--lr', default=1e-4, type=float)
 parser.add_argument('--model-name', default='tresnet_l')
-parser.add_argument('--model-path', default='./tresnet_l.pth', type=str)
+parser.add_argument('--model-path', default='https://miil-public-eu.oss-eu-central-1.aliyuncs.com/model-zoo/ML_Decoder/tresnet_l_pretrain_ml_decoder.pth', type=str)
 parser.add_argument('--num-classes', default=80)
 parser.add_argument('-j', '--workers', default=8, type=int, metavar='N',
-                    help='number of data loading workers (default: 16)')
+                    help='number of data loading workers')
 parser.add_argument('--image-size', default=448, type=int,
                     metavar='N', help='input image size (default: 448)')
-parser.add_argument('--batch-size', default=128, type=int,
-                    metavar='N', help='mini-batch size (default: 16)')
+parser.add_argument('--batch-size', default=56, type=int,
+                    metavar='N', help='mini-batch size')
 
 # ML-Decoder
 parser.add_argument('--use-ml-decoder', default=1, type=int)
-parser.add_argument('--num-of-groups', default=-1, type=int) # full-decoding
+parser.add_argument('--num-of-groups', default=-1, type=int)  # full-decoding
 parser.add_argument('--decoder-embedding', default=768, type=int)
-
 
 
 def main():
     args = parser.parse_args()
 
     # Setup model
-    print('creating model...')
+    print('creating model {}...'.format(args.model_name))
     model = create_model(args).cuda()
-    if args.model_path:  # make sure to load pretrained ImageNet model
-        state = torch.load(args.model_path, map_location='cpu')
-        filtered_dict = {k: v for k, v in state['model'].items() if
-                         (k in model.state_dict() and 'head.fc' not in k)}
-        print(model.load_state_dict(filtered_dict, strict=False))
-    print('done\n')
+    print('done')
 
     # COCO Data loading
     instances_path_val = os.path.join(args.data, 'annotations/instances_val2014.json')
     instances_path_train = os.path.join(args.data, 'annotations/instances_train2014.json')
     # data_path_val = args.data
     # data_path_train = args.data
-    data_path_val   = f'{args.data}/val2014'    # args.data
+    data_path_val = f'{args.data}/val2014'  # args.data
     data_path_train = f'{args.data}/train2014'  # args.data
     val_dataset = CocoDetection(data_path_val,
                                 instances_path_val,
@@ -88,8 +83,7 @@ def train_multi_label_coco(model, train_loader, val_loader, lr):
     ema = ModelEma(model, 0.9997)  # 0.9997^641=0.82
 
     # set optimizer
-    Epochs = 80
-    Stop_epoch = 40
+    Epochs = 40
     weight_decay = 1e-4
     criterion = AsymmetricLoss(gamma_neg=4, gamma_pos=0, clip=0.05, disable_torch_grad_focal_loss=True)
     parameters = add_weight_decay(model, weight_decay)
@@ -102,8 +96,6 @@ def train_multi_label_coco(model, train_loader, val_loader, lr):
     trainInfoList = []
     scaler = GradScaler()
     for epoch in range(Epochs):
-        if epoch > Stop_epoch:
-            break
         for i, (inputData, target) in enumerate(train_loader):
             inputData = inputData.cuda()
             target = target.cuda()  # (batch,3,num_classes)
