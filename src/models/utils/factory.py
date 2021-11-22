@@ -4,6 +4,8 @@ from urllib import request
 
 import torch
 
+from ...ml_decoder.ml_decoder import add_ml_decoder_head
+
 logger = logging.getLogger(__name__)
 
 from ..tresnet import TResnetM, TResnetL
@@ -24,6 +26,11 @@ def create_model(args):
         print("model: {} not found !!".format(args.model_name))
         exit(-1)
 
+    ####################################################################################
+    if args.use_ml_decoder:
+        model = add_ml_decoder_head(model,num_classes=args.num_classes,num_of_groups=args.num_of_groups,
+                                    decoder_embedding=args.decoder_embedding)
+    ####################################################################################
     # loading pretrain model
     model_path = args.model_path
     if args.model_name == 'tresnet_l' and os.path.exists("./tresnet_l.pth"):

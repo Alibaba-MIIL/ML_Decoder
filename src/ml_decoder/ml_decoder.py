@@ -5,11 +5,34 @@ from torch import nn, Tensor
 from torch.nn.modules.transformer import _get_activation_fn
 
 
+def add_ml_decoder_head(model, num_classes=-1, num_of_groups=-1, decoder_embedding=768):
+    if num_classes == -1:
+        num_classes = model.num_classes
+    num_features = model.num_features
+    if hasattr(model, 'global_pool') and hasattr(model, 'fc'):  # resnet50
+        model.global_pool = nn.Identity()
+        del model.fc
+        model.fc = MLDecoder(num_classes=num_classes, initial_num_features=num_features, num_of_groups=num_of_groups,
+                             decoder_embedding=decoder_embedding)
+    elif hasattr(model, 'head'):  # tresnet
+        if hasattr(model, 'global_pool'):
+            model.global_pool = nn.Identity()
+        del model.head
+        model.head = MLDecoder(num_classes=num_classes, initial_num_features=num_features, num_of_groups=num_of_groups,
+                               decoder_embedding=decoder_embedding)
+    else:
+        print("model is not suited for ml-decoder")
+        exit(-1)
+
+    return model
+
+
 class TransformerDecoderLayerOptimal(nn.Module):
     def __init__(self, d_model, nhead=8, dim_feedforward=2048, dropout=0.1, activation="relu",
                  layer_norm_eps=1e-5) -> None:
         super(TransformerDecoderLayerOptimal, self).__init__()
         self.norm1 = nn.LayerNorm(d_model, eps=layer_norm_eps)
+        self.dropout = nn.Dropout(dropout)
         self.dropout1 = nn.Dropout(dropout)
         self.dropout2 = nn.Dropout(dropout)
         self.dropout3 = nn.Dropout(dropout)

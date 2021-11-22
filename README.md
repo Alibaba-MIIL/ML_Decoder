@@ -46,8 +46,8 @@ We will share a full reproduction code for the article results.
 <br>A reproduction code for MS-COCO multi-label:
 ```
 python train.py  \
---data=/home/datasets/coco2014/
---model_name=tresnet_l
+--data=/home/datasets/coco2014/ \
+--model_name=tresnet_l \
 --image_size=448
 ```
 

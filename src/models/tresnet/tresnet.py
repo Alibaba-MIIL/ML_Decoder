@@ -129,8 +129,7 @@ class Bottleneck(Module):
 
 class TResNet(Module):
 
-    def __init__(self, layers, in_chans=3, num_classes=1000, width_factor=1.0, first_two_layers=BasicBlock,
-                 ml_decoder_head=None):
+    def __init__(self, layers, in_chans=3, num_classes=1000, width_factor=1.0, first_two_layers=BasicBlock):
         super(TResNet, self).__init__()
 
         # JIT layers
@@ -161,14 +160,10 @@ class TResNet(Module):
             ('layer4', layer4)]))
 
         # head
-        if not ml_decoder_head:
-            self.global_pool = nn.Sequential(OrderedDict([('global_pool_layer', global_pool_layer)]))
-            self.num_features = (self.planes * 8) * Bottleneck.expansion
-            fc = nn.Linear(self.num_features, num_classes)
-            self.head = nn.Sequential(OrderedDict([('fc', fc)]))
-            self.ml_decoder_head = None
-        else:
-            self.ml_decoder_head = ml_decoder_head
+        self.global_pool = nn.Sequential(OrderedDict([('global_pool_layer', global_pool_layer)]))
+        self.num_features = (self.planes * 8) * Bottleneck.expansion
+        fc = nn.Linear(self.num_features, num_classes)
+        self.head = nn.Sequential(OrderedDict([('fc', fc)]))
 
         # model initilization
         for m in self.modules():
@@ -207,11 +202,8 @@ class TResNet(Module):
 
     def forward(self, x):
         x = self.body(x)
-        if self.ml_decoder_head:
-            logits = self.ml_decoder_head(x)
-        else:
-            self.embeddings = self.global_pool(x)
-            logits = self.head(self.embeddings)
+        self.embeddings = self.global_pool(x)
+        logits = self.head(self.embeddings)
         return logits
 
 
@@ -234,13 +226,7 @@ def TResnetM(model_params):
     """
     in_chans = 3
     num_classes = model_params['num_classes']
-    args = model_params['args']
-    if args.use_ml_decoder:
-        ml_decoder_head = MLDecoder(num_classes, num_of_groups=args.num_of_groups,
-                                    decoder_embedding=args.decoder_embedding)
-    else:
-        ml_decoder_head = None
-    model = TResNet(layers=[3, 4, 11, 3], num_classes=num_classes, in_chans=in_chans,ml_decoder_head=ml_decoder_head)
+    model = TResNet(layers=[3, 4, 11, 3], num_classes=num_classes, in_chans=in_chans)
     return model
 
 
@@ -249,14 +235,6 @@ def TResnetL(model_params):
     """
     in_chans = 3
     num_classes = model_params['num_classes']
-    args = model_params['args']
     layers_list = [3, 4, 23, 3]
-    if args.use_ml_decoder:
-        ml_decoder_head = MLDecoder(num_classes, num_of_groups=args.num_of_groups,
-                                    decoder_embedding=args.decoder_embedding)
-    else:
-        ml_decoder_head = None
-
-    model = TResNet(layers=layers_list, num_classes=num_classes, in_chans=in_chans, first_two_layers=Bottleneck,
-                    ml_decoder_head=ml_decoder_head)
+    model = TResNet(layers=layers_list, num_classes=num_classes, in_chans=in_chans, first_two_layers=Bottleneck)
     return model
