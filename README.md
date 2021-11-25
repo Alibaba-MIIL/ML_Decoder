@@ -5,7 +5,7 @@
 [![PWC](https://img.shields.io/endpoint.svg?url=https://paperswithcode.com/badge/asymmetric-loss-for-multi-label/multi-label-classification-on-nus-wide)](https://paperswithcode.com/sota/multi-label-classification-on-nus-wide?p=asymmetric-loss-for-multi-label)<br>
 [![PWC](https://img.shields.io/endpoint.svg?url=https://paperswithcode.com/badge/imagenet-21k-pretraining-for-the-masses/multi-label-classification-on-pascal-voc-2007)](https://paperswithcode.com/sota/multi-label-classification-on-pascal-voc-2007?p=imagenet-21k-pretraining-for-the-masses)<br>
 -->
-<br> [Paper](https://arxiv.org/abs/2009.14119) |
+<br> [Paper](https://arxiv.org/abs/2009.14119)
 
 Official PyTorch Implementation
 
@@ -36,13 +36,16 @@ ML-Decoder implementation is available [here](./src/ml_decoder/ml_decoder.py).
 It can be easily integrated into any backbone using this example code:
 ```
 ml_decoder_head = MLDecoder(num_classes) # initilization
-spatial_embeddings = self.backbone(x)        
-logits = ml_decoder_head(spatial_embeddings)
-return logits
+
+spatial_embeddings = self.backbone(input_image) # H x W x D      
+ 
+logits = ml_decoder_head(spatial_embeddings) # N x 1
 ```
 ## Training Code 
 
 We will share a full reproduction code for the article results.
+
+### Multi-label Training Code
 <br>A reproduction code for MS-COCO multi-label:
 ```
 python train.py  \
@@ -51,7 +54,44 @@ python train.py  \
 --image_size=448
 ```
 
-Reproduction code for ZSL and single-label are WIP.
+### Single-label Training Code
+
+Our single-label training code is the of the excellent [timm](https://github.com/rwightman/pytorch-image-models) repo.Reproduction code is currently from a fork, w will work toward a full merge to the main repo.
+```
+git clone https://github.com/mrT23/pytorch-image-models.git
+```
+This is the code for A2 configuration training, with ML-Decoder (--use-ml-decoder-head=1):
+```
+python -u -m torch.distributed.launch --nproc_per_node=8 \
+--nnodes=1 \
+--node_rank=0 \
+./train.py \
+/data/imagenet/ \
+--amp \
+-b=256 \
+--epochs=300 \
+--drop-path=0.05 \
+--opt=lamb \
+--weight-decay=0.02 \
+--sched='cosine' \
+--lr=4e-3 \
+--warmup-epochs=5 \
+--model=resnet50 \
+--aa=rand-m7-mstd0.5-inc1 \
+--reprob=0.0 \
+--remode='pixel' \
+--mixup=0.1 \
+--cutmix=1.0 \
+--aug-repeats 3 \
+--bce-target-thresh 0.2 \
+--smoothing=0 \
+--bce-loss \
+--train-interpolation=bicubic \
+--use-ml-decoder-head=1
+```
+### ZSL Training Code
+Reproduction code for ZSL is WIP.
+
 ## Citation
 ```
  TBD
