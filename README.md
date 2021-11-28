@@ -37,9 +37,9 @@ It can be easily integrated into any backbone using this example code:
 ```
 ml_decoder_head = MLDecoder(num_classes) # initilization
 
-spatial_embeddings = self.backbone(input_image) # H x W x D      
+spatial_embeddings = self.backbone(input_image) # backbone generates spatial embeddings      
  
-logits = ml_decoder_head(spatial_embeddings) # N x 1
+logits = ml_decoder_head(spatial_embeddings) # transfrom spatial embeddings to logits
 ```
 ## Training Code 
 
