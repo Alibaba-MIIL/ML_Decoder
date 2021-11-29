@@ -7,9 +7,9 @@ import torch.optim
 import torch.utils.data.distributed
 import torchvision.transforms as transforms
 from torch.optim import lr_scheduler
-from src.helper_functions.helper_functions import mAP, CocoDetection, CutoutPIL, ModelEma, add_weight_decay
-from src.models import create_model
-from src.loss_functions.losses import AsymmetricLoss
+from src_files.helper_functions.helper_functions import mAP, CocoDetection, CutoutPIL, ModelEma, add_weight_decay
+from src_files.models import create_model
+from src_files.loss_functions.losses import AsymmetricLoss
 from randaugment import RandAugment
 from torch.cuda.amp import GradScaler, autocast
 
@@ -30,7 +30,6 @@ parser.add_argument('--batch-size', default=56, type=int,
 parser.add_argument('--use-ml-decoder', default=1, type=int)
 parser.add_argument('--num-of-groups', default=-1, type=int)  # full-decoding
 parser.add_argument('--decoder-embedding', default=768, type=int)
-
 
 def main():
     args = parser.parse_args()

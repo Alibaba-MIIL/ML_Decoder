@@ -5,7 +5,7 @@
 [![PWC](https://img.shields.io/endpoint.svg?url=https://paperswithcode.com/badge/asymmetric-loss-for-multi-label/multi-label-classification-on-nus-wide)](https://paperswithcode.com/sota/multi-label-classification-on-nus-wide?p=asymmetric-loss-for-multi-label)<br>
 [![PWC](https://img.shields.io/endpoint.svg?url=https://paperswithcode.com/badge/imagenet-21k-pretraining-for-the-masses/multi-label-classification-on-pascal-voc-2007)](https://paperswithcode.com/sota/multi-label-classification-on-pascal-voc-2007?p=imagenet-21k-pretraining-for-the-masses)<br>
 -->
-<br> [Paper](https://arxiv.org/abs/2009.14119)
+<br> [Paper](http://arxiv.org/abs/2111.12933)
 
 Official PyTorch Implementation
 
@@ -24,15 +24,15 @@ on MS-COCO multi-label, we reach 91.4% mAP; on NUS-WIDE zero-shot, we reach 31.1
 <p align="center">
  <table class="tg">
   <tr>
-    <td class="tg-c3ow"><img src="./pics/main_pic.png" align="center" width="400""></td>
-    <td class="tg-c3ow"><img src="./pics/ms_coco_scores.png" align="center" width="400" ></td>
+    <td class="tg-c3ow"><img src="./pictures/main_pic.png" align="center" width="400""></td>
+    <td class="tg-c3ow"><img src="./pictures/ms_coco_scores.png" align="center" width="400" ></td>
 
   </tr>
 </table>
 </p>
 
 ## ML-Decoder Implementation
-ML-Decoder implementation is available [here](./src/ml_decoder/ml_decoder.py).
+ML-Decoder implementation is available [here](./src_files/ml_decoder/ml_decoder.py).
 It can be easily integrated into any backbone using this example code:
 ```
 ml_decoder_head = MLDecoder(num_classes) # initilization
@@ -94,5 +94,12 @@ Reproduction code for ZSL is WIP.
 
 ## Citation
 ```
- TBD
+@misc{ridnik2021mldecoder,
+      title={ML-Decoder: Scalable and Versatile Classification Head}, 
+      author={Tal Ridnik and Gilad Sharir and Avi Ben-Cohen and Emanuel Ben-Baruch and Asaf Noy},
+      year={2021},
+      eprint={2111.12933},
+      archivePrefix={arXiv},
+      primaryClass={cs.CV}
+}
 ```
