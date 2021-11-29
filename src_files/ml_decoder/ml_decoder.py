@@ -104,7 +104,11 @@ class MLDecoder(nn.Module):
 
         # switching to 768 initial embeddings
         decoder_embedding = 768 if decoder_embedding < 0 else decoder_embedding
-        self.embed_standart = nn.Linear(initial_num_features, decoder_embedding)
+        embed_standart = nn.Linear(initial_num_features, decoder_embedding)
+
+        # non-learnable queries
+        query_embed = nn.Embedding(embed_len_decoder, decoder_embedding)
+        query_embed.requires_grad_(False)
 
         # decoder
         decoder_dropout = 0.1
@@ -113,39 +117,37 @@ class MLDecoder(nn.Module):
         layer_decode = TransformerDecoderLayerOptimal(d_model=decoder_embedding,
                                                       dim_feedforward=dim_feedforward, dropout=decoder_dropout)
         self.decoder = nn.TransformerDecoder(layer_decode, num_layers=num_layers_decoder)
-
-        # non-learnable queries
-        self.query_embed = nn.Embedding(embed_len_decoder, decoder_embedding)
-        self.query_embed.requires_grad_(False)
+        self.decoder.embed_standart = embed_standart
+        self.decoder.query_embed = query_embed
 
         # group fully-connected
-        self.num_classes = num_classes
-        self.duplicate_factor = int(num_classes / embed_len_decoder + 0.999)
-        self.duplicate_pooling = torch.nn.Parameter(
-            torch.Tensor(embed_len_decoder, decoder_embedding, self.duplicate_factor))
-        self.duplicate_pooling_bias = torch.nn.Parameter(torch.Tensor(num_classes))
-        torch.nn.init.xavier_normal_(self.duplicate_pooling)
-        torch.nn.init.constant_(self.duplicate_pooling_bias, 0)
-        self.group_fc = GroupFC(embed_len_decoder)
+        self.decoder.num_classes = num_classes
+        self.decoder.duplicate_factor = int(num_classes / embed_len_decoder + 0.999)
+        self.decoder.duplicate_pooling = torch.nn.Parameter(
+            torch.Tensor(embed_len_decoder, decoder_embedding, self.decoder.duplicate_factor))
+        self.decoder.duplicate_pooling_bias = torch.nn.Parameter(torch.Tensor(num_classes))
+        torch.nn.init.xavier_normal_(self.decoder.duplicate_pooling)
+        torch.nn.init.constant_(self.decoder.duplicate_pooling_bias, 0)
+        self.decoder.group_fc = GroupFC(embed_len_decoder)
 
     def forward(self, x):
         if len(x.shape) == 4:  # [bs,2048, 7,7]
             embedding_spatial = x.flatten(2).transpose(1, 2)
         else:  # [bs, 197,468]
             embedding_spatial = x
-        embedding_spatial_786 = self.embed_standart(embedding_spatial)
+        embedding_spatial_786 = self.decoder.embed_standart(embedding_spatial)
         embedding_spatial_786 = torch.nn.functional.relu(embedding_spatial_786, inplace=True)
 
         bs = embedding_spatial_786.shape[0]
-        query_embed = self.query_embed.weight
+        query_embed = self.decoder.query_embed.weight
         # tgt = query_embed.unsqueeze(1).repeat(1, bs, 1)
         tgt = query_embed.unsqueeze(1).expand(-1, bs, -1)  # no allocation of memory with expand
         h = self.decoder(tgt, embedding_spatial_786.transpose(0, 1))  # [embed_len_decoder, batch, 768]
         h = h.transpose(0, 1)
 
-        out_extrap = torch.zeros(h.shape[0], h.shape[1], self.duplicate_factor, device=h.device, dtype=h.dtype)
-        self.group_fc(h, self.duplicate_pooling, out_extrap)
-        h_out = out_extrap.flatten(1)[:, :self.num_classes]
-        h_out += self.duplicate_pooling_bias
+        out_extrap = torch.zeros(h.shape[0], h.shape[1], self.decoder.duplicate_factor, device=h.device, dtype=h.dtype)
+        self.decoder.group_fc(h, self.decoder.duplicate_pooling, out_extrap)
+        h_out = out_extrap.flatten(1)[:, :self.decoder.num_classes]
+        h_out += self.decoder.duplicate_pooling_bias
         logits = h_out
         return logits
