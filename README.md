@@ -2,6 +2,7 @@
 
 [![PWC](https://img.shields.io/endpoint.svg?url=https://paperswithcode.com/badge/ml-decoder-scalable-and-versatile/multi-label-classification-on-ms-coco)](https://paperswithcode.com/sota/multi-label-classification-on-ms-coco?p=ml-decoder-scalable-and-versatile)
 [![PWC](https://img.shields.io/endpoint.svg?url=https://paperswithcode.com/badge/ml-decoder-scalable-and-versatile/multi-label-zero-shot-learning-on-nus-wide)](https://paperswithcode.com/sota/multi-label-zero-shot-learning-on-nus-wide?p=ml-decoder-scalable-and-versatile)
+[![PWC](https://img.shields.io/endpoint.svg?url=https://paperswithcode.com/badge/ml-decoder-scalable-and-versatile/multi-label-classification-on-openimages-v6)](https://paperswithcode.com/sota/multi-label-classification-on-openimages-v6?p=ml-decoder-scalable-and-versatile)
 
 <br> [Paper](http://arxiv.org/abs/2111.12933)
 
