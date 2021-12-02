@@ -52,9 +52,7 @@ def main():
     if args.zsl:
         #NUS-WIDE Data loading
         json_path = os.path.join(args.data, 'benchmark_81_v0.json')
-        class_dict = pickle.load(os.path.join(args.data, 'class.pickle'))
         wordvec_array = torch.load(os.path.join(args.data, 'wordvec_array.pth'))
-        train_cls_ids, val_cls_ids, test_cls_ids = get_class_ids_split(json_path, class_dict)
         train_transform = transforms.Compose([
                                           transforms.Resize((args.image_size, args.image_size)),
                                           CutoutPIL(cutout_factor=0.5),
@@ -67,9 +65,11 @@ def main():
                                         transforms.ToTensor(),
                                         # normalize, # no need, toTensor does normalization
                                     ])
-        train_dataset, val_dataset = get_datasets_from_csv(args.data, args.data,
-                                                           train_transform, val_transform,
-                                                           train_cls_ids, test_cls_ids)
+        train_dataset, val_dataset, train_cls_ids, test_cls_ids = \
+            get_datasets_from_csv(args.data,
+                                  args.data,
+                                  train_transform, val_transform,
+                                  json_path)
         train_wordvecs = wordvec_array[..., train_cls_ids]
         test_wordvecs = wordvec_array[..., test_cls_ids]
 

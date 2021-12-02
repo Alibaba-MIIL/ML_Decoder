@@ -333,7 +333,7 @@ def multilabel2numeric(multilabels):
 
 
 def get_datasets_from_csv(dataset_local_path, metadata_local_path, train_transform,
-                          val_transform, train_cls_ids, val_cls_ids):
+                          val_transform, json_path):
 
     images_path_list, image_labels_list, train_idx, valid_idx = parse_csv_data(dataset_local_path, metadata_local_path)
     labels, class_to_idx, idx_to_class = multilabel2numeric(image_labels_list)
@@ -344,12 +344,13 @@ def get_datasets_from_csv(dataset_local_path, metadata_local_path, train_transfo
     images_path_list_val = [images_path_list[idx] for idx in valid_idx]
     image_labels_list_val = [labels[idx] for idx in valid_idx]
 
+    train_cls_ids, _, test_cls_ids = get_class_ids_split(json_path, idx_to_class)
 
     train_dl = DatasetFromList(dataset_local_path, images_path_list_train, image_labels_list_train,
                                idx_to_class,
                                transform=train_transform, class_ids=train_cls_ids)
 
     val_dl = DatasetFromList(dataset_local_path, images_path_list_val, image_labels_list_val, idx_to_class,
-                             transform=val_transform, class_ids=val_cls_ids)
+                             transform=val_transform, class_ids=test_cls_ids)
 
-    return train_dl, val_dl
+    return train_dl, val_dl, train_cls_ids, test_cls_ids
