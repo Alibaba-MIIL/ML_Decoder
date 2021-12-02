@@ -230,9 +230,9 @@ def get_class_ids_split(json_path, classes_dict):
             if current_class in split_dict['test class']:
                 test_cls_ids.add(idx)
 
-    train_cls_ids = np.fromiter(train_cls_ids)
-    val_cls_ids = np.fromiter(val_cls_ids)
-    test_cls_ids = np.fromiter(test_cls_ids)
+    train_cls_ids = np.fromiter(train_cls_ids, np.int32)
+    val_cls_ids = np.fromiter(val_cls_ids, np.int32)
+    test_cls_ids = np.fromiter(test_cls_ids, np.int32)
     return train_cls_ids, val_cls_ids, test_cls_ids
 
 
@@ -285,6 +285,7 @@ class DatasetFromList(data.Dataset):
             img = self.transform(img)
         if self.target_transform is not None:
             target = self.target_transform([target])
+        target = self.get_targets_multi_label(np.array(target))
         if self.class_ids is not None:
             target = target[self.class_ids]
         return img, target
@@ -292,6 +293,12 @@ class DatasetFromList(data.Dataset):
     def __len__(self):
         return len(self.samples)
 
+    def get_targets_multi_label(self, target):
+        # Full (non-partial) labels
+        labels = np.zeros(len(self.classes))
+        labels[target] = 1
+        target = labels.astype('float32')
+        return target
 
 def parse_csv_data(dataset_local_path, metadata_local_path):
     try:
