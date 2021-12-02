@@ -74,7 +74,6 @@ def main():
         test_wordvecs = wordvec_array[..., test_cls_ids].float()
         print('classes {}'.format(len(train_dataset.classes)))
         print('train_cls_ids {} test_cls_ids {} '.format(train_cls_ids.shape, test_cls_ids.shape))
-        print('train_wv {} val_wv {} '.format(train_wordvecs.shape, test_wordvecs.shape))
 
     else:
         # COCO Data loading
