@@ -235,14 +235,14 @@ def get_class_ids_split(json_path, classes_dict):
 def update_wordvecs(model, train_wordvecs=None, test_wordvecs=None):
     if hasattr(model, 'fc'):
         if train_wordvecs is not None:
-            model.fc.decoder.query_embed = train_wordvecs.transpose(1, 2)
+            model.fc.decoder.query_embed = train_wordvecs.transpose(0, 1)
         else:
-            model.fc.decoder.query_embed = test_wordvecs.transpose(1, 2)
+            model.fc.decoder.query_embed = test_wordvecs.transpose(0, 1)
     elif hasattr(model, 'head'):
         if train_wordvecs is not None:
-            model.head.decoder.query_embed = train_wordvecs.transpose(1, 2)
+            model.head.decoder.query_embed = train_wordvecs.transpose(0, 1)
         else:
-            model.head.decoder.query_embed = test_wordvecs.transpose(1, 2)
+            model.head.decoder.query_embed = test_wordvecs.transpose(0, 1)
     else:
         print("model is not suited for ml-decoder")
         exit(-1)

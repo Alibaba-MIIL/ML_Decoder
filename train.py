@@ -37,10 +37,10 @@ parser.add_argument('--zsl', default=0, type=int)
 def main():
     args = parser.parse_args()
     if args.zsl:
-        #NUS-WIDE Data loading
-        args.num_of_groups = 10000
+        #NUS-WIDE defaults
+        args.num_of_groups = 925
         args.use_ml_decoder = 1
-        args.num_classes = 1006
+        args.num_classes = 925
 
     # Setup model
     print('creating model {}...'.format(args.model_name))
@@ -55,7 +55,8 @@ def main():
         class_dict = pickle.load(os.path.join(args.data, 'class.pickle'))
         wordvec_array = torch.load(os.path.join(args.data, 'wordvec_array.pth'))
         train_cls_ids, val_cls_ids, test_cls_ids = get_class_ids_split(json_path, class_dict)
-        train_dataset, val_dataset = NUSData(os.path.join(args.data, 'data.csv'))
+        train_dataset, val_dataset = NUSData(os.path.join(args.data, 'data.csv'), train_cls_ids,
+                                             test_cls_ids)
         train_wordvecs = wordvec_array[..., train_cls_ids]
         test_wordvecs = wordvec_array[..., test_cls_ids]
 
