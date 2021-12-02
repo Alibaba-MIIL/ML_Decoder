@@ -138,8 +138,6 @@ def train_multi_label_coco(model, train_loader, val_loader, lr, zsl=0, train_wor
         for i, (inputData, target) in enumerate(train_loader):
             inputData = inputData.cuda()
             target = target.cuda()  # (batch,3,num_classes)
-            if not zsl:
-                target = target.max(dim=1)[0]
             with autocast():  # mixed precision
                 output = model(inputData).float()  # sigmoid will be done in loss !
             loss = criterion(output, target)
