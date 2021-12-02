@@ -8,7 +8,7 @@ import torch.utils.data.distributed
 import torchvision.transforms as transforms
 from torch.optim import lr_scheduler
 from src_files.helper_functions.helper_functions import mAP, CocoDetection, CutoutPIL, ModelEma, \
-    add_weight_decay, get_class_ids_split, NUSData, update_wordvecs
+    add_weight_decay, get_class_ids_split, get_datasets_from_csv, update_wordvecs
 from src_files.models import create_model
 from src_files.loss_functions.losses import AsymmetricLoss
 from randaugment import RandAugment
@@ -55,8 +55,21 @@ def main():
         class_dict = pickle.load(os.path.join(args.data, 'class.pickle'))
         wordvec_array = torch.load(os.path.join(args.data, 'wordvec_array.pth'))
         train_cls_ids, val_cls_ids, test_cls_ids = get_class_ids_split(json_path, class_dict)
-        train_dataset, val_dataset = NUSData(os.path.join(args.data, 'data.csv'), train_cls_ids,
-                                             test_cls_ids)
+        train_transform = transforms.Compose([
+                                          transforms.Resize((args.image_size, args.image_size)),
+                                          CutoutPIL(cutout_factor=0.5),
+                                          RandAugment(),
+                                          transforms.ToTensor(),
+                                          # normalize,
+                                      ])
+        val_transform = transforms.Compose([
+                                        transforms.Resize((args.image_size, args.image_size)),
+                                        transforms.ToTensor(),
+                                        # normalize, # no need, toTensor does normalization
+                                    ])
+        train_dataset, val_dataset = get_datasets_from_csv(args.data, args.data,
+                                                           train_transform, val_transform,
+                                                           train_cls_ids, test_cls_ids)
         train_wordvecs = wordvec_array[..., train_cls_ids]
         test_wordvecs = wordvec_array[..., test_cls_ids]
 
