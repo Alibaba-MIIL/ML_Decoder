@@ -10,6 +10,7 @@ from torchvision import datasets as datasets
 import torch
 from PIL import ImageDraw
 from pycocotools.coco import COCO
+import json
 
 
 def parse_args(parser):
@@ -195,3 +196,37 @@ def add_weight_decay(model, weight_decay=1e-4, skip_list=()):
     return [
         {'params': no_decay, 'weight_decay': 0.},
         {'params': decay, 'weight_decay': weight_decay}]
+
+
+def get_class_ids_split(json_path, classes_dict):
+    with open(json_path) as fp:
+        split_dict = json.load(fp)
+    if 'train class' in split_dict:
+        only_test_classes = False
+    else:
+        only_test_classes = True
+
+    train_cls_ids = set()
+    val_cls_ids = set()
+    test_cls_ids = set()
+
+    # classes_dict = self.learn.dbunch.dataset.classes
+    for idx, (i, current_class) in enumerate(classes_dict.items()):
+        if only_test_classes:  # base the division only on test classes
+            if current_class in split_dict['test class']:
+                test_cls_ids.add(idx)
+            else:
+                val_cls_ids.add(idx)
+                train_cls_ids.add(idx)
+        else:  # per set classes are provided
+            if current_class in split_dict['train class']:
+                train_cls_ids.add(idx)
+            # if current_class in split_dict['validation class']:
+            #     val_cls_ids.add(i)
+            if current_class in split_dict['test class']:
+                test_cls_ids.add(idx)
+
+    train_cls_ids = np.fromiter(train_cls_ids)
+    val_cls_ids = np.fromiter(val_cls_ids)
+    test_cls_ids = np.fromiter(test_cls_ids)
+    return train_cls_ids, val_cls_ids, test_cls_ids

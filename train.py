@@ -7,11 +7,13 @@ import torch.optim
 import torch.utils.data.distributed
 import torchvision.transforms as transforms
 from torch.optim import lr_scheduler
-from src_files.helper_functions.helper_functions import mAP, CocoDetection, CutoutPIL, ModelEma, add_weight_decay
+from src_files.helper_functions.helper_functions import mAP, CocoDetection, CutoutPIL, ModelEma, \
+    add_weight_decay, get_class_ids_split, NUSData
 from src_files.models import create_model
 from src_files.loss_functions.losses import AsymmetricLoss
 from randaugment import RandAugment
 from torch.cuda.amp import GradScaler, autocast
+import pickle
 
 parser = argparse.ArgumentParser(description='PyTorch MS_COCO Training')
 parser.add_argument('--data', type=str, default='/home/MSCOCO_2014/')
@@ -30,38 +32,54 @@ parser.add_argument('--batch-size', default=56, type=int,
 parser.add_argument('--use-ml-decoder', default=1, type=int)
 parser.add_argument('--num-of-groups', default=-1, type=int)  # full-decoding
 parser.add_argument('--decoder-embedding', default=768, type=int)
+parser.add_argument('--zsl', default=0, type=int)
 
 def main():
     args = parser.parse_args()
+    if args.zsl:
+        #NUS-WIDE Data loading
+        args.num_of_groups = -1
+        args.use_ml_decoder = 1
 
     # Setup model
     print('creating model {}...'.format(args.model_name))
     model = create_model(args).cuda()
     print('done')
 
-    # COCO Data loading
-    instances_path_val = os.path.join(args.data, 'annotations/instances_val2014.json')
-    instances_path_train = os.path.join(args.data, 'annotations/instances_train2014.json')
-    # data_path_val = args.data
-    # data_path_train = args.data
-    data_path_val = f'{args.data}/val2014'  # args.data
-    data_path_train = f'{args.data}/train2014'  # args.data
-    val_dataset = CocoDetection(data_path_val,
-                                instances_path_val,
-                                transforms.Compose([
-                                    transforms.Resize((args.image_size, args.image_size)),
-                                    transforms.ToTensor(),
-                                    # normalize, # no need, toTensor does normalization
-                                ]))
-    train_dataset = CocoDetection(data_path_train,
-                                  instances_path_train,
-                                  transforms.Compose([
-                                      transforms.Resize((args.image_size, args.image_size)),
-                                      CutoutPIL(cutout_factor=0.5),
-                                      RandAugment(),
-                                      transforms.ToTensor(),
-                                      # normalize,
-                                  ]))
+    if args.zsl:
+        #NUS-WIDE Data loading
+        json_path = os.path.join(args.data, 'benchmark_81_v0.json')
+        class_dict = pickle.load(os.path.join(args.data, 'class.pickle'))
+        wordvec_array = torch.load(os.path.join(args.data, 'wordvec_array.pth'))
+        train_cls_ids, val_cls_ids, test_cls_ids = get_class_ids_split(json_path, class_dict)
+        train_dataset, val_dataset = NUSData(os.path.join(args.data, 'data.csv'))
+        model.fc.train_wordvecs = wordvec_array[train_cls_ids]
+        model.fc.test_wordvecs = wordvec_array[test_cls_ids]
+
+    else:
+        # COCO Data loading
+        instances_path_val = os.path.join(args.data, 'annotations/instances_val2014.json')
+        instances_path_train = os.path.join(args.data, 'annotations/instances_train2014.json')
+        # data_path_val = args.data
+        # data_path_train = args.data
+        data_path_val = f'{args.data}/val2014'  # args.data
+        data_path_train = f'{args.data}/train2014'  # args.data
+        val_dataset = CocoDetection(data_path_val,
+                                    instances_path_val,
+                                    transforms.Compose([
+                                        transforms.Resize((args.image_size, args.image_size)),
+                                        transforms.ToTensor(),
+                                        # normalize, # no need, toTensor does normalization
+                                    ]))
+        train_dataset = CocoDetection(data_path_train,
+                                      instances_path_train,
+                                      transforms.Compose([
+                                          transforms.Resize((args.image_size, args.image_size)),
+                                          CutoutPIL(cutout_factor=0.5),
+                                          RandAugment(),
+                                          transforms.ToTensor(),
+                                          # normalize,
+                                      ]))
     print("len(val_dataset)): ", len(val_dataset))
     print("len(train_dataset)): ", len(train_dataset))
 
@@ -75,10 +93,10 @@ def main():
         num_workers=args.workers, pin_memory=False)
 
     # Actuall Training
-    train_multi_label_coco(model, train_loader, val_loader, args.lr)
+    train_multi_label_coco(model, train_loader, val_loader, args.lr, args.zsl)
 
 
-def train_multi_label_coco(model, train_loader, val_loader, lr):
+def train_multi_label_coco(model, train_loader, val_loader, lr, zsl=0):
     ema = ModelEma(model, 0.9997)  # 0.9997^641=0.82
 
     # set optimizer
@@ -95,6 +113,8 @@ def train_multi_label_coco(model, train_loader, val_loader, lr):
     trainInfoList = []
     scaler = GradScaler()
     for epoch in range(Epochs):
+        if zsl:
+            model.decoder.query_embed = model.fc.train_wordvecs
         for i, (inputData, target) in enumerate(train_loader):
             inputData = inputData.cuda()
             target = target.cuda()  # (batch,3,num_classes)
@@ -129,6 +149,8 @@ def train_multi_label_coco(model, train_loader, val_loader, lr):
             pass
 
         model.eval()
+        if zsl:
+            model.decoder.query_embed = model.fc.test_wordvecs
         mAP_score = validate_multi(val_loader, model, ema)
         model.train()
         if mAP_score > highest_mAP:

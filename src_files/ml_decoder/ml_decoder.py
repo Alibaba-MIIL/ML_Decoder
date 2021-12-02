@@ -129,6 +129,8 @@ class MLDecoder(nn.Module):
         torch.nn.init.xavier_normal_(self.decoder.duplicate_pooling)
         torch.nn.init.constant_(self.decoder.duplicate_pooling_bias, 0)
         self.decoder.group_fc = GroupFC(embed_len_decoder)
+        self.train_wordvecs = None
+        self.test_wordvecs = None
 
     def forward(self, x):
         if len(x.shape) == 4:  # [bs,2048, 7,7]
