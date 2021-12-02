@@ -8,7 +8,7 @@ import torch.utils.data.distributed
 import torchvision.transforms as transforms
 from torch.optim import lr_scheduler
 from src_files.helper_functions.helper_functions import mAP, CocoDetection, CutoutPIL, ModelEma, \
-    add_weight_decay, get_class_ids_split, NUSData
+    add_weight_decay, get_class_ids_split, NUSData, update_wordvecs
 from src_files.models import create_model
 from src_files.loss_functions.losses import AsymmetricLoss
 from randaugment import RandAugment
@@ -38,14 +38,17 @@ def main():
     args = parser.parse_args()
     if args.zsl:
         #NUS-WIDE Data loading
-        args.num_of_groups = -1
+        args.num_of_groups = 10000
         args.use_ml_decoder = 1
+        args.num_classes = 1006
 
     # Setup model
     print('creating model {}...'.format(args.model_name))
     model = create_model(args).cuda()
     print('done')
 
+    train_wordvecs = None
+    test_wordvecs = None
     if args.zsl:
         #NUS-WIDE Data loading
         json_path = os.path.join(args.data, 'benchmark_81_v0.json')
@@ -53,8 +56,8 @@ def main():
         wordvec_array = torch.load(os.path.join(args.data, 'wordvec_array.pth'))
         train_cls_ids, val_cls_ids, test_cls_ids = get_class_ids_split(json_path, class_dict)
         train_dataset, val_dataset = NUSData(os.path.join(args.data, 'data.csv'))
-        model.fc.train_wordvecs = wordvec_array[train_cls_ids]
-        model.fc.test_wordvecs = wordvec_array[test_cls_ids]
+        train_wordvecs = wordvec_array[..., train_cls_ids]
+        test_wordvecs = wordvec_array[..., test_cls_ids]
 
     else:
         # COCO Data loading
@@ -93,10 +96,11 @@ def main():
         num_workers=args.workers, pin_memory=False)
 
     # Actuall Training
-    train_multi_label_coco(model, train_loader, val_loader, args.lr, args.zsl)
+    train_multi_label_coco(model, train_loader, val_loader, args.lr, args.zsl, train_wordvecs, test_wordvecs)
 
 
-def train_multi_label_coco(model, train_loader, val_loader, lr, zsl=0):
+def train_multi_label_coco(model, train_loader, val_loader, lr, zsl=0, train_wordvecs=None,
+                           test_wordvecs=None):
     ema = ModelEma(model, 0.9997)  # 0.9997^641=0.82
 
     # set optimizer
@@ -114,7 +118,7 @@ def train_multi_label_coco(model, train_loader, val_loader, lr, zsl=0):
     scaler = GradScaler()
     for epoch in range(Epochs):
         if zsl:
-            model.decoder.query_embed = model.fc.train_wordvecs
+            update_wordvecs(model, train_wordvecs)
         for i, (inputData, target) in enumerate(train_loader):
             inputData = inputData.cuda()
             target = target.cuda()  # (batch,3,num_classes)
@@ -150,7 +154,7 @@ def train_multi_label_coco(model, train_loader, val_loader, lr, zsl=0):
 
         model.eval()
         if zsl:
-            model.decoder.query_embed = model.fc.test_wordvecs
+            update_wordvecs(model, test_wordvecs=test_wordvecs)
         mAP_score = validate_multi(val_loader, model, ema)
         model.train()
         if mAP_score > highest_mAP:

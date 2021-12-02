@@ -230,3 +230,19 @@ def get_class_ids_split(json_path, classes_dict):
     val_cls_ids = np.fromiter(val_cls_ids)
     test_cls_ids = np.fromiter(test_cls_ids)
     return train_cls_ids, val_cls_ids, test_cls_ids
+
+
+def update_wordvecs(model, train_wordvecs=None, test_wordvecs=None):
+    if hasattr(model, 'fc'):
+        if train_wordvecs is not None:
+            model.fc.decoder.query_embed = train_wordvecs.transpose(1, 2)
+        else:
+            model.fc.decoder.query_embed = test_wordvecs.transpose(1, 2)
+    elif hasattr(model, 'head'):
+        if train_wordvecs is not None:
+            model.head.decoder.query_embed = train_wordvecs.transpose(1, 2)
+        else:
+            model.head.decoder.query_embed = test_wordvecs.transpose(1, 2)
+    else:
+        print("model is not suited for ml-decoder")
+        exit(-1)
