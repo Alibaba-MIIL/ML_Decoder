@@ -138,6 +138,8 @@ def train_multi_label_coco(model, train_loader, val_loader, lr, zsl=0, train_wor
         for i, (inputData, target) in enumerate(train_loader):
             inputData = inputData.cuda()
             target = target.cuda()  # (batch,3,num_classes)
+            if not zsl:
+                target = target.max(dim=1)[0]
             with autocast():  # mixed precision
                 output = model(inputData).float()  # sigmoid will be done in loss !
             loss = criterion(output, target)
@@ -172,7 +174,7 @@ def train_multi_label_coco(model, train_loader, val_loader, lr, zsl=0, train_wor
             update_wordvecs(model, test_wordvecs=test_wordvecs)
             update_wordvecs(ema.module, test_wordvecs=test_wordvecs)
 
-        mAP_score = validate_multi(val_loader, model, ema)
+        mAP_score = validate_multi(val_loader, model, ema, zsl)
         model.train()
         if mAP_score > highest_mAP:
             highest_mAP = mAP_score
@@ -184,7 +186,7 @@ def train_multi_label_coco(model, train_loader, val_loader, lr, zsl=0, train_wor
         print('current_mAP = {:.2f}, highest_mAP = {:.2f}\n'.format(mAP_score, highest_mAP))
 
 
-def validate_multi(val_loader, model, ema_model):
+def validate_multi(val_loader, model, ema_model, zsl):
     print("starting validation")
     Sig = torch.nn.Sigmoid()
     preds_regular = []
@@ -192,7 +194,8 @@ def validate_multi(val_loader, model, ema_model):
     targets = []
     for i, (input, target) in enumerate(val_loader):
         target = target
-        target = target.max(dim=1)[0]
+        if not zsl:
+            target = target.max(dim=1)[0]
         # compute output
         with torch.no_grad():
             with autocast():
