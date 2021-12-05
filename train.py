@@ -170,6 +170,8 @@ def train_multi_label_coco(model, train_loader, val_loader, lr, zsl=0, train_wor
         model.eval()
         if zsl:
             update_wordvecs(model, test_wordvecs=test_wordvecs)
+            update_wordvecs(ema.module, test_wordvecs=test_wordvecs)
+
         mAP_score = validate_multi(val_loader, model, ema)
         model.train()
         if mAP_score > highest_mAP:
