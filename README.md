@@ -91,9 +91,9 @@ python -u -m torch.distributed.launch --nproc_per_node=8 \
 ### ZSL Training Code
 <br>First download the following files to the root path of the dataset 
 
-[benchmark_81_v0.json](path_to_json), 
-[wordvec_array.pth](path_to_wordvecs), 
-[data.csv](path_to_data.csv)
+[benchmark_81_v0.json](oss://miil-public-eu/public/NUS_WIDE_ZSL/benchmark_81_v0.json), 
+[wordvec_array.pth](oss://miil-public-eu/public/NUS_WIDE_ZSL/wordvec_array.pth), 
+[data.csv](oss://miil-public-eu/public/NUS_WIDE_ZSL/data.csv)
 
 Training for NUS-WIDE ZSL:
 ```
