@@ -99,8 +99,7 @@ Training for NUS-WIDE ZSL:
 ```
 python train.py  \
 --data=/home/datasets/nus_wide/ \
---model_name=tresnet_l \
---image_size=448 \
+--image_size=224 \
 --zsl 1
 ```
 
