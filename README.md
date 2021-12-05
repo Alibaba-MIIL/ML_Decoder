@@ -89,7 +89,20 @@ python -u -m torch.distributed.launch --nproc_per_node=8 \
 --use-ml-decoder-head=1
 ```
 ### ZSL Training Code
-Reproduction code for ZSL is WIP.
+<br>First download the following files to the root path of the dataset 
+
+[benchmark_81_v0.json](path_to_json), 
+[wordvec_array.pth](path_to_wordvecs), 
+[data.csv](path_to_data.csv)
+
+Training for NUS-WIDE ZSL:
+```
+python train.py  \
+--data=/home/datasets/nus_wide/ \
+--model_name=tresnet_l \
+--image_size=448 \
+--zsl 1
+```
 
 ## Citation
 ```
