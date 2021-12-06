@@ -97,10 +97,9 @@ python -u -m torch.distributed.launch --nproc_per_node=8 \
 
 Training for NUS-WIDE ZSL:
 ```
-python train.py  \
+python train_zsl_nus.py  \
 --data=/home/datasets/nus_wide/ \
---image_size=224 \
---zsl 1
+--image_size=224
 ```
 
 ## Citation
