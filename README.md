@@ -42,7 +42,7 @@ logits = ml_decoder_head(spatial_embeddings) # transfrom spatial embeddings to l
 ```
 ## Training Code 
 
-We will share a full reproduction code for the article results.
+We share a full reproduction code for all the article results.
 
 ### Multi-label Training Code
 <br>A reproduction code for MS-COCO multi-label:
@@ -90,7 +90,6 @@ python -u -m torch.distributed.launch --nproc_per_node=8 \
 ```
 ### ZSL Training Code
 <br>First download the following files to the root path of the dataset 
-
 [benchmark_81_v0.json](oss://miil-public-eu/public/NUS_WIDE_ZSL/benchmark_81_v0.json), 
 [wordvec_array.pth](oss://miil-public-eu/public/NUS_WIDE_ZSL/wordvec_array.pth), 
 [data.csv](oss://miil-public-eu/public/NUS_WIDE_ZSL/data.csv)
