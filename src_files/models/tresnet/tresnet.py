@@ -5,7 +5,7 @@ from collections import OrderedDict
 
 from .layers.anti_aliasing import AntiAliasDownsampleLayer
 from .layers.avg_pool import FastAvgPool2d
-from src.ml_decoder.ml_decoder import MLDecoder
+from src_files.ml_decoder.ml_decoder import MLDecoder
 from .layers.general_layers import SEModule, SpaceToDepthModule
 from inplace_abn import InPlaceABN, ABN
 

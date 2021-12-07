@@ -7,12 +7,13 @@ import torch.optim
 import torch.utils.data.distributed
 import torchvision.transforms as transforms
 from torch.optim import lr_scheduler
-from src_files.helper_functions.helper_functions import mAP, CocoDetection, CutoutPIL, ModelEma, \
-    add_weight_decay
+from src_files.helper_functions.helper_functions import mAP, CutoutPIL, ModelEma, \
+    add_weight_decay, get_datasets_from_csv, update_wordvecs
 from src_files.models import create_model
 from src_files.loss_functions.losses import AsymmetricLoss
 from randaugment import RandAugment
 from torch.cuda.amp import GradScaler, autocast
+import pickle
 
 parser = argparse.ArgumentParser(description='PyTorch MS_COCO Training')
 parser.add_argument('--data', type=str, default='/home/MSCOCO_2014/')
@@ -34,36 +35,42 @@ parser.add_argument('--decoder-embedding', default=768, type=int)
 
 def main():
     args = parser.parse_args()
-    args.zsl = 0
+    #NUS-WIDE defaults
+    args.zsl = 1
+    args.num_of_groups = 925
+    args.use_ml_decoder = 1
+    args.num_classes = 925
 
     # Setup model
     print('creating model {}...'.format(args.model_name))
     model = create_model(args).cuda()
     print('done')
 
-    # COCO Data loading
-    instances_path_val = os.path.join(args.data, 'annotations/instances_val2014.json')
-    instances_path_train = os.path.join(args.data, 'annotations/instances_train2014.json')
-    # data_path_val = args.data
-    # data_path_train = args.data
-    data_path_val = f'{args.data}/val2014'  # args.data
-    data_path_train = f'{args.data}/train2014'  # args.data
-    val_dataset = CocoDetection(data_path_val,
-                                instances_path_val,
-                                transforms.Compose([
-                                    transforms.Resize((args.image_size, args.image_size)),
-                                    transforms.ToTensor(),
-                                    # normalize, # no need, toTensor does normalization
-                                ]))
-    train_dataset = CocoDetection(data_path_train,
-                                  instances_path_train,
-                                  transforms.Compose([
+    #NUS-WIDE Data loading
+    json_path = os.path.join(args.data, 'benchmark_81_v0.json')
+    wordvec_array = torch.load(os.path.join(args.data, 'wordvec_array.pth'))
+    train_transform = transforms.Compose([
                                       transforms.Resize((args.image_size, args.image_size)),
                                       CutoutPIL(cutout_factor=0.5),
                                       RandAugment(),
                                       transforms.ToTensor(),
                                       # normalize,
-                                  ]))
+                                  ])
+    val_transform = transforms.Compose([
+                                    transforms.Resize((args.image_size, args.image_size)),
+                                    transforms.ToTensor(),
+                                    # normalize, # no need, toTensor does normalization
+                                ])
+    train_dataset, val_dataset, train_cls_ids, test_cls_ids = \
+        get_datasets_from_csv(args.data,
+                              args.data,
+                              train_transform, val_transform,
+                              json_path)
+    train_wordvecs = wordvec_array[..., train_cls_ids].float()
+    test_wordvecs = wordvec_array[..., test_cls_ids].float()
+    print('classes {}'.format(len(train_dataset.classes)))
+    print('train_cls_ids {} test_cls_ids {} '.format(train_cls_ids.shape, test_cls_ids.shape))
+
     print("len(val_dataset)): ", len(val_dataset))
     print("len(train_dataset)): ", len(train_dataset))
 
@@ -77,10 +84,11 @@ def main():
         num_workers=args.workers, pin_memory=False)
 
     # Actuall Training
-    train_multi_label_coco(model, train_loader, val_loader, args.lr)
+    train_multi_label_zsl(model, train_loader, val_loader, args.lr, train_wordvecs, test_wordvecs)
 
 
-def train_multi_label_coco(model, train_loader, val_loader, lr):
+def train_multi_label_zsl(model, train_loader, val_loader, lr, train_wordvecs=None,
+                          test_wordvecs=None):
     ema = ModelEma(model, 0.9997)  # 0.9997^641=0.82
 
     # set optimizer
@@ -97,10 +105,10 @@ def train_multi_label_coco(model, train_loader, val_loader, lr):
     trainInfoList = []
     scaler = GradScaler()
     for epoch in range(Epochs):
+        update_wordvecs(model, train_wordvecs)
         for i, (inputData, target) in enumerate(train_loader):
             inputData = inputData.cuda()
             target = target.cuda()  # (batch,3,num_classes)
-            target = target.max(dim=1)[0]
             with autocast():  # mixed precision
                 output = model(inputData).float()  # sigmoid will be done in loss !
             loss = criterion(output, target)
@@ -131,6 +139,8 @@ def train_multi_label_coco(model, train_loader, val_loader, lr):
             pass
 
         model.eval()
+        update_wordvecs(model, test_wordvecs=test_wordvecs)
+        update_wordvecs(ema.module, test_wordvecs=test_wordvecs)
 
         mAP_score = validate_multi(val_loader, model, ema)
         model.train()
@@ -152,7 +162,6 @@ def validate_multi(val_loader, model, ema_model):
     targets = []
     for i, (input, target) in enumerate(val_loader):
         target = target
-        target = target.max(dim=1)[0]
         # compute output
         with torch.no_grad():
             with autocast():

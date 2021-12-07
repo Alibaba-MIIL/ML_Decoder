@@ -29,7 +29,7 @@ def create_model(args):
     ####################################################################################
     if args.use_ml_decoder:
         model = add_ml_decoder_head(model,num_classes=args.num_classes,num_of_groups=args.num_of_groups,
-                                    decoder_embedding=args.decoder_embedding)
+                                    decoder_embedding=args.decoder_embedding, zsl=args.zsl)
     ####################################################################################
     # loading pretrain model
     model_path = args.model_path
