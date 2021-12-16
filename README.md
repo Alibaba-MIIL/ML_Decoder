@@ -2,7 +2,8 @@
 
 [![PWC](https://img.shields.io/endpoint.svg?url=https://paperswithcode.com/badge/ml-decoder-scalable-and-versatile/multi-label-classification-on-ms-coco)](https://paperswithcode.com/sota/multi-label-classification-on-ms-coco?p=ml-decoder-scalable-and-versatile)<br>
 [![PWC](https://img.shields.io/endpoint.svg?url=https://paperswithcode.com/badge/ml-decoder-scalable-and-versatile/multi-label-zero-shot-learning-on-nus-wide)](https://paperswithcode.com/sota/multi-label-zero-shot-learning-on-nus-wide?p=ml-decoder-scalable-and-versatile)<br>
-[![PWC](https://img.shields.io/endpoint.svg?url=https://paperswithcode.com/badge/ml-decoder-scalable-and-versatile/multi-label-classification-on-openimages-v6)](https://paperswithcode.com/sota/multi-label-classification-on-openimages-v6?p=ml-decoder-scalable-and-versatile)
+[![PWC](https://img.shields.io/endpoint.svg?url=https://paperswithcode.com/badge/ml-decoder-scalable-and-versatile/multi-label-classification-on-openimages-v6)](https://paperswithcode.com/sota/multi-label-classification-on-openimages-v6?p=ml-decoder-scalable-and-versatile)<br>
+[![PWC](https://img.shields.io/endpoint.svg?url=https://paperswithcode.com/badge/ml-decoder-scalable-and-versatile/image-classification-on-cifar-100)](https://paperswithcode.com/sota/image-classification-on-cifar-100?p=ml-decoder-scalable-and-versatile)
 
 <br> [Paper](http://arxiv.org/abs/2111.12933)
 
@@ -101,6 +102,10 @@ python train_zsl_nus.py  \
 --data=/home/datasets/nus_wide/ \
 --image_size=224
 ```
+
+### New Top Result - CIFAR 100
+Using ML-Decoder classification head, and Swin-L backbone, we reached a top result of 95.1% on [CIFAR-100 dataset](https://paperswithcode.com/sota/image-classification-on-cifar-100).
+We will add this result to a future version of the paper.
 
 ## Citation
 ```
