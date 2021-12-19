@@ -22,7 +22,7 @@ parser.add_argument('--image-size', default=448, type=int,
                     metavar='N', help='input image size (default: 448)')
 parser.add_argument('-j', '--workers', default=8, type=int, metavar='N',
                     help='number of data loading workers')
-parser.add_argument('--thr', default=0.8, type=float,
+parser.add_argument('--thr', default=0.75, type=float,
                     metavar='N', help='threshold value')
 parser.add_argument('--batch-size', default=32, type=int,
                     metavar='N', help='mini-batch size')
