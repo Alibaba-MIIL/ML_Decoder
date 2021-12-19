@@ -213,12 +213,7 @@ def TResnetS(model_params):
     in_chans = 3
     num_classes = model_params['num_classes']
     args = model_params['args']
-    if args.use_ml_decoder:
-        ml_decoder_head = MLDecoder(num_classes, num_of_groups=args.num_of_groups,
-                                    decoder_embedding=args.decoder_embedding)
-    else:
-        ml_decoder_head = None
-    model = TResNet(layers=[3, 4, 6, 3], num_classes=num_classes, in_chans=in_chans,ml_decoder_head=ml_decoder_head)
+    model = TResNet(layers=[3, 4, 6, 3], num_classes=num_classes, in_chans=in_chans)
     return model
 
 def TResnetM(model_params):

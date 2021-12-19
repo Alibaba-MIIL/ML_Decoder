@@ -31,10 +31,10 @@ parser.add_argument('--batch-size', default=56, type=int,
 parser.add_argument('--use-ml-decoder', default=1, type=int)
 parser.add_argument('--num-of-groups', default=-1, type=int)  # full-decoding
 parser.add_argument('--decoder-embedding', default=768, type=int)
+parser.add_argument('--zsl', default=0, type=int)
 
 def main():
     args = parser.parse_args()
-    args.zsl = 0
 
     # Setup model
     print('creating model {}...'.format(args.model_name))
