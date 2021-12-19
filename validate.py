@@ -8,22 +8,26 @@ import torch.optim
 import torch.utils.data.distributed
 import torchvision.transforms as transforms
 
+from src_files.helper_functions.bn_fusion import fuse_bn_recursively
+from src_files.models.tresnet.tresnet import InplacABN_to_ABN
 from src_files.helper_functions.helper_functions import mAP, CocoDetection, AverageMeter
 from src_files.models import create_model
 
-
 parser = argparse.ArgumentParser(description='PyTorch MS_COCO validation')
 parser.add_argument('--data', type=str, default='/home/MSCOCO_2014/')
-parser.add_argument('--lr', default=1e-4, type=float)
 parser.add_argument('--model-name', default='tresnet_l')
 parser.add_argument('--model-path', default='model_path', type=str)
 parser.add_argument('--num-classes', default=80)
-parser.add_argument('-j', '--workers', default=8, type=int, metavar='N',
-                    help='number of data loading workers')
 parser.add_argument('--image-size', default=448, type=int,
                     metavar='N', help='input image size (default: 448)')
-parser.add_argument('--batch-size', default=56, type=int,
+parser.add_argument('-j', '--workers', default=8, type=int, metavar='N',
+                    help='number of data loading workers')
+parser.add_argument('--thr', default=0.8, type=float,
+                    metavar='N', help='threshold value')
+parser.add_argument('--batch-size', default=32, type=int,
                     metavar='N', help='mini-batch size')
+parser.add_argument('--print-freq', '-p', default=32, type=int,
+                    metavar='N', help='print frequency (default: 64)')
 
 # ML-Decoder
 parser.add_argument('--use-ml-decoder', default=1, type=int)
@@ -37,7 +41,16 @@ def main():
 
     # Setup model
     print('creating model {}...'.format(args.model_name))
-    model = create_model(args,load_head=True).cuda()
+    model = create_model(args, load_head=True).cuda()
+    state = torch.load(args.model_path, map_location='cpu')
+    model.load_state_dict(state['model'], strict=True)
+    model.eval()
+    ########### eliminate BN for faster inference ###########
+    model = model.cpu()
+    model = InplacABN_to_ABN(model)
+    model = fuse_bn_recursively(model)
+    model = model.cuda().half().eval()
+    #######################################################
     print('done')
 
     instances_path = os.path.join(args.data, 'annotations/instances_val2014.json')
@@ -76,15 +89,14 @@ def validate_multi(val_loader, model, args):
         target = target.max(dim=1)[0]
         # compute output
         with torch.no_grad():
-            output = Sig(model(input.cuda())).cpu()
+            output = Sig(model(input.cuda().half())).cpu()
 
         # for mAP calculation
         preds.append(output.cpu())
         targets.append(target.cpu())
 
         # measure accuracy and record loss
-        thr=0.8
-        pred = output.data.gt(thr).long()
+        pred = output.data.gt(args.thr).long()
 
         tp += (pred + target).eq(2).sum(dim=0)
         fp += (pred - target).eq(1).sum(dim=0)
@@ -126,8 +138,7 @@ def validate_multi(val_loader, model, args):
         r_o = tp.sum().float() / (tp + fn).sum().float() * 100.0
         f_o = 2 * p_o * r_o / (p_o + r_o)
 
-        print_freq = 64
-        if i % print_freq == 0:
+        if i % args.print_freq == 0:
             print('Test: [{0}/{1}]\t'
                   'Time {batch_time.val:.3f} ({batch_time.avg:.3f})\t'
                   'Precision {prec.val:.2f} ({prec.avg:.2f})\t'
