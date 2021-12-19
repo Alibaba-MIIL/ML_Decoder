@@ -27,7 +27,7 @@ parser.add_argument('--model-name', type=str, default='tresnet_l')
 parser.add_argument('--image-size', type=int, default=448)
 # parser.add_argument('--dataset-type', type=str, default='MS-COCO')
 parser.add_argument('--th', type=float, default=0.75)
-
+parser.add_argument('--top-k', type=float, default=20)
 # ML-Decoder
 parser.add_argument('--use-ml-decoder', default=1, type=int)
 parser.add_argument('--num-of-groups', default=-1, type=int)  # full-decoding
@@ -66,7 +66,15 @@ def main():
     tensor_batch = torch.unsqueeze(tensor_img, 0).cuda().half() # float16 inference
     output = torch.squeeze(torch.sigmoid(model(tensor_batch)))
     np_output = output.cpu().detach().numpy()
-    detected_classes = classes_list[np_output > args.th]
+
+
+    ## Top-k predictions
+    # detected_classes = classes_list[np_output > args.th]
+    idx_sort = np.argsort(-np_output)
+    detected_classes = np.array(classes_list)[idx_sort][: args.top_k]
+    scores = np_output[idx_sort][: args.top_k]
+    idx_th = scores > args.th
+    detected_classes = detected_classes[idx_th]
     print('done\n')
 
     # displaying image

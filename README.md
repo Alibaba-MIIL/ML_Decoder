@@ -42,6 +42,17 @@ spatial_embeddings = self.backbone(input_image) # backbone generates spatial emb
  
 logits = ml_decoder_head(spatial_embeddings) # transfrom spatial embeddings to logits
 ```
+
+## Inference Code and Pretrained Models
+See [Model Zoo](MODEL_ZOO.md)
+<p align="center">
+ <table class="tg">
+  <tr>
+    <td class="tg-c3ow"><img src="./pics/example_inference_open_images.jpeg" align="center" width="600" ></td>
+  </tr>
+</table>
+</p>
+
 ## Training Code 
 
 We share a full reproduction code for the article results.
