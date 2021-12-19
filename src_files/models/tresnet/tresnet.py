@@ -238,3 +238,12 @@ def TResnetL(model_params):
     layers_list = [3, 4, 23, 3]
     model = TResNet(layers=layers_list, num_classes=num_classes, in_chans=in_chans, first_two_layers=Bottleneck)
     return model
+
+def TResnetXL(model_params):
+    """Constructs a large TResnet model.
+    """
+    in_chans = 3
+    num_classes = model_params['num_classes']
+    layers_list = [3, 8, 34, 5]
+    model = TResNet(layers=layers_list, num_classes=num_classes, in_chans=in_chans, first_two_layers=Bottleneck)
+    return model

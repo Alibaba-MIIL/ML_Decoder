@@ -8,10 +8,10 @@ from ...ml_decoder.ml_decoder import add_ml_decoder_head
 
 logger = logging.getLogger(__name__)
 
-from ..tresnet import TResnetM, TResnetL
+from ..tresnet import TResnetM, TResnetL, TResnetXL
 
 
-def create_model(args):
+def create_model(args,load_head=False):
     """Create a model
     """
     model_params = {'args': args, 'num_classes': args.num_classes}
@@ -22,6 +22,8 @@ def create_model(args):
         model = TResnetM(model_params)
     elif args.model_name == 'tresnet_l':
         model = TResnetL(model_params)
+    elif args.model_name == 'tresnet_xl':
+        model = TResnetXL(model_params)
     else:
         print("model: {} not found !!".format(args.model_name))
         exit(-1)
@@ -42,8 +44,11 @@ def create_model(args):
             model_path = "./tresnet_l.pth"
             print('done')
         state = torch.load(model_path, map_location='cpu')
-        filtered_dict = {k: v for k, v in state['model'].items() if
-                         (k in model.state_dict() and 'head.fc' not in k)}
-        model.load_state_dict(filtered_dict, strict=False)
+        if not load_head:
+            filtered_dict = {k: v for k, v in state['model'].items() if
+                             (k in model.state_dict() and 'head.fc' not in k)}
+            model.load_state_dict(filtered_dict, strict=False)
+        else:
+            model.load_state_dict(state['model'], strict=True)
 
     return model
