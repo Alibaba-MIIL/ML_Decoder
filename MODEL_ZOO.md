@@ -9,6 +9,8 @@ In addition to full reproduction code, we provide a collection of pretrained mod
 | [TResNet_L](https://miil-public-eu.oss-eu-central-1.aliyuncs.com/model-zoo/ML_Decoder/tresnet_l_COCO__448_90_0.pth)  | 448 | MS-COCO | 90.0 |
 | [TResNet_XL](https://miil-public-eu.oss-eu-central-1.aliyuncs.com/model-zoo/ML_Decoder/tresnet_xl_COCO_640_91_4.pth) | 640 | MS-COCO | 91.4 |
 | [TResNet_M](https://miil-public-eu.oss-eu-central-1.aliyuncs.com/model-zoo/ML_Decoder/tresnet_m_open_images_200_groups_86_8.pth) | 224 | OpenImages | 86.8 |
+| [TResNet_L](https://miil-public-eu.oss-eu-central-1.aliyuncs.com/model-zoo/ML_Decoder/tresnet_l_stanford_card_96.41.pth)  | 384 | Stanford-Cars | 96.41 |
+
 
 ## MS-COCO  Validation Code
 After downloading the models, you can validate their MS-COCO scores using the following script:
