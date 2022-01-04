@@ -59,7 +59,10 @@ class TransformerDecoderLayerOptimal(nn.Module):
                 memory_key_padding_mask: Optional[Tensor] = None) -> Tensor:
         tgt = tgt + self.dropout1(tgt)
         tgt = self.norm1(tgt)
-        tgt2 = self.multihead_attn(tgt, memory, memory)[0]
+        #
+        tgt2, attn_output_weights = self.multihead_attn(tgt, memory, memory)
+        self.attn_output_weights=attn_output_weights # for visualization
+        #
         tgt = tgt + self.dropout2(tgt2)
         tgt = self.norm2(tgt)
         tgt2 = self.linear2(self.dropout(self.activation(self.linear1(tgt))))
