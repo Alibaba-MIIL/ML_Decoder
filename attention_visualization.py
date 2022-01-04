@@ -1,18 +1,24 @@
 import os
 import argparse
-
+from matplotlib import cm
+from PIL import Image
 import torch
 import torch.nn.parallel
 import torch.optim
 import torch.utils.data.distributed
 import torchvision.transforms as transforms
 from torch.optim import lr_scheduler
+
+from src_files.helper_functions.bn_fusion import fuse_bn_recursively
 from src_files.helper_functions.helper_functions import mAP, CocoDetection, CutoutPIL, ModelEma, \
     add_weight_decay
+from src_files.helper_functions.visualization import plot_activation
 from src_files.models import create_model
 
 import cv2
 import matplotlib
+
+from src_files.models.tresnet.tresnet import InplacABN_to_ABN
 
 matplotlib.use('TkAgg')
 import matplotlib.pyplot as plt
@@ -37,17 +43,43 @@ parser.add_argument('--num-of-groups', default=-1, type=int)  # full-decoding
 parser.add_argument('--decoder-embedding', default=768, type=int)
 parser.add_argument('--zsl', default=0, type=int)
 
+def overlay_mask(img: Image.Image, mask: Image.Image, colormap: str = 'jet', alpha: float = 0.7) -> Image.Image:
+
+    cmap = cm.get_cmap(colormap)
+    # Resize mask and apply colormap
+    overlay = mask.resize(img.size, resample=Image.BICUBIC)
+    overlay = (255 * cmap(np.asarray(overlay) ** 2)[:, :, :3]).astype(np.uint8)
+    # Overlay the image with the mask
+    overlayed_img = Image.fromarray((alpha * np.asarray(img) + (1 - alpha) * overlay).astype(np.uint8))
+
+    return overlayed_img
+
 def main():
     args = parser.parse_args()
     args.model_name='tresnet_m'
     args.model_path = 'C:/git/github_miil/ML_Decoder/pretrained_models/tresnet_m_COCO_224_84_2.pth'
     args.image_size=224
+    ##
+    # args.model_name='tresnet_l'
+    # args.model_path = 'C:/git/github_miil/ML_Decoder/pretrained_models/tresnet_l_COCO__448_90_0.pth'
+    # args.image_size=448
+    ##
+    # args.model_name='tresnet_xl'
+    # args.model_path = 'C:/git/github_miil/ML_Decoder/pretrained_models/tresnet_xl_COCO_640_91_4.pth'
+    # args.image_size=640
+
     args.batch_size=1
     args.workers=0
 
     # Setup model
     print('creating model {}...'.format(args.model_name))
-    model = create_model(args).cuda()
+    model = create_model(args,load_head=True).cuda()
+    ########### eliminate BN for faster inference ###########
+    model = model.cpu()
+    model = InplacABN_to_ABN(model)
+    model = fuse_bn_recursively(model)
+    model = model.cuda().eval()
+    ########### eliminate BN for faster inference ###########
     print('done')
 
     # COCO Data loading
@@ -83,42 +115,25 @@ def main():
         maps=attn_output_weights[0]
         tgts=target[0]
         indices=torch.nonzero(tgts, as_tuple=True)[0]
-        relevant_maps=torch.index_select(maps, 0, indices).view(-1,7,7)
+        spatial_res=int(args.image_size/32)
+        relevant_maps=torch.index_select(maps, 0, indices).view(-1,spatial_res,spatial_res)
 
 
-        im=np.transpose(x[0].cpu().float().numpy(),(1, 2, 0))
-        for ind in range(relevant_maps.shape[0]):
-
+        for ind in range(indices.shape[0]): # looping over gt classes
             # get class name
             id_class=indices[ind].item()
             aaa=val_dataset.coco.dataset['categories']
             class_name=aaa[id_class]['name']
 
-            # get score
+            # get inference score
             score = output[0][id_class].item()
 
+            # get relevent map
             mask_np=relevant_maps[ind,:,:].cpu().numpy()
-            # mask_resize = cv2.resize(mask_np / mask_np.max(), (args.image_size, args.image_size))
-            mask_resize = cv2.resize(mask_np , (args.image_size, args.image_size))
-            mask_resize=mask_resize-mask_resize.min()
-            mask_resize=mask_resize/mask_resize.max()
-            mask_resize=mask_resize*mask_resize # just for sharper visualization
-            mask_resize=np.expand_dims(mask_resize, axis=2)
-            # plt.figure(ind)
-            plt.subplot(1,3,1)
-            plt.imshow(im)
-            plt.axis('off')
-            plt.subplot(1, 3, 2)
-            plt.imshow(mask_resize)
-            plt.axis('off')
-            plt.title('score {:.2f}'.format(score))
-            plt.subplot(1, 3, 3)
-            plt.imshow(im*mask_resize)
-            plt.axis('off')
-            plt.title(class_name)
-            plt.waitforbuttonpress()
-        aaa=3
 
+            #plot
+            plot_activation(mask_np, x, args.image_size, score, class_name)
+            plt.waitforbuttonpress()
 
 
 if __name__ == '__main__':
