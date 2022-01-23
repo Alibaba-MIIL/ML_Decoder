@@ -106,7 +106,7 @@ def train_multi_label_coco(model, train_loader, val_loader, lr):
     for epoch in range(Epochs):
         for i, (inputData, target) in enumerate(train_loader):
             inputData = inputData.cuda()
-            target = target.cuda()  # (batch,3,num_classes)
+            target = target.cuda()
             with autocast():  # mixed precision
                 output = model(inputData).float()  # sigmoid will be done in loss !
             loss = criterion(output, target)
