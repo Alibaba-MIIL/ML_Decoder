@@ -121,8 +121,6 @@ class CocoDetection(datasets.coco.CocoDetection):
             else:
                 output[2][self.cat2cat[obj['category_id']]] = 1
         target = output
-        target = target.max(dim=1)[0] # we dont use the small vs large information in multi-label detection
-
         path = coco.loadImgs(img_id)[0]['file_name']
         img = Image.open(os.path.join(self.root, path)).convert('RGB')
         if self.transform is not None:

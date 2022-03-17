@@ -49,8 +49,8 @@ def main():
     # COCO Data loading
     instances_path_val = os.path.join(args.data, 'annotations/instances_val2014.json')
     instances_path_train = os.path.join(args.data, 'annotations/instances_train2014.json')
-    # data_path_val = args.data
-    # data_path_train = args.data
+    #data_path_val = args.data
+    #data_path_train = args.data
     data_path_val = f'{args.data}/val2014'  # args.data
     data_path_train = f'{args.data}/train2014'  # args.data
     val_dataset = CocoDetection(data_path_val,
@@ -105,6 +105,7 @@ def train_multi_label_coco(model, train_loader, val_loader, lr):
         for i, (inputData, target) in enumerate(train_loader):
             inputData = inputData.cuda()
             target = target.cuda()
+            target = target.max(dim=1)[0]
             with autocast():  # mixed precision
                 output = model(inputData).float()  # sigmoid will be done in loss !
             loss = criterion(output, target)
