@@ -1,11 +1,13 @@
 import cv2
 import matplotlib
+import torch
 from PIL import Image
 from matplotlib import cm
 
 matplotlib.use('TkAgg')
 import matplotlib.pyplot as plt
 import numpy as np
+
 
 def overlay_mask(img: Image.Image, mask: Image.Image, colormap: str = 'jet', alpha: float = 0.7) -> Image.Image:
     '''
@@ -21,14 +23,17 @@ def overlay_mask(img: Image.Image, mask: Image.Image, colormap: str = 'jet', alp
     return overlayed_img
 
 
-def plot_activation(mask_np,x,image_size,score,class_name):
+def plot_activation(mask_np, x, image_size, score, class_name, tempeature=0.5):
+    # normalization to make presentation clearer
     mask_np = mask_np - mask_np.min()
     mask_np = mask_np / mask_np.max()
-    mask_resize = cv2.resize(mask_np, (image_size, image_size))
+    mask_np = np.power(mask_np, tempeature)
+
+    mask_resize = cv2.resize(mask_np, (image_size, image_size), interpolation=cv2.INTER_CUBIC)
     mask_resize = np.expand_dims(mask_resize, axis=2)
 
     from torchvision.transforms.functional import to_pil_image
-    result = overlay_mask(to_pil_image(x[0].cpu().float()), to_pil_image(mask_np, mode='F'), alpha=0.5)
+    result = overlay_mask(to_pil_image(x[0].cpu().float()), to_pil_image(mask_np, mode='F'), alpha=0.4)
     im = np.transpose(x[0].cpu().float().numpy(), (1, 2, 0))
 
     ## plot
