@@ -45,10 +45,14 @@ def create_model(args,load_head=False):
             print('done')
         state = torch.load(model_path, map_location='cpu')
         if not load_head:
-            filtered_dict = {k: v for k, v in state['model'].items() if
+            if 'model' in state:
+                key = 'model'
+            else:
+                key = 'state_dict'
+            filtered_dict = {k: v for k, v in state[key].items() if
                              (k in model.state_dict() and 'head.fc' not in k)}
             model.load_state_dict(filtered_dict, strict=False)
         else:
-            model.load_state_dict(state['model'], strict=True)
+            model.load_state_dict(state[key], strict=True)
 
     return model
