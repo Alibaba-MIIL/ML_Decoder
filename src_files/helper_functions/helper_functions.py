@@ -268,6 +268,7 @@ class DatasetFromList(data.Dataset):
         self.loader = loader
         self.samples = tuple(zip(impaths, labels))
         self.class_ids = class_ids
+        self.get_relevant_samples()
 
     def __getitem__(self, index):
         impath, target = self.samples[index]
@@ -290,6 +291,18 @@ class DatasetFromList(data.Dataset):
         labels[target] = 1
         target = labels.astype('float32')
         return target
+
+    def get_relevant_samples(self):
+        new_samples = [s for s in
+                       self.samples if any(x in self.class_ids for x in s[1])]
+        # new_indices = [i for i, s in enumerate(self.samples) if any(x in self.class_ids for x
+        #                                                             in s[1])]
+        # omitted_samples = [s for s in
+        #                    self.samples if not any(x in self.class_ids for x in s[1])]
+
+        self.samples = new_samples
+
+
 
 def parse_csv_data(dataset_local_path, metadata_local_path):
     try:
