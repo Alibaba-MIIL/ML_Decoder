@@ -12,6 +12,7 @@ from src_files.helper_functions.bn_fusion import fuse_bn_recursively
 from src_files.models.tresnet.tresnet import InplacABN_to_ABN
 from src_files.helper_functions.helper_functions import mAP, CocoDetection, AverageMeter
 from src_files.models import create_model
+from torch.cuda.amp import autocast
 
 parser = argparse.ArgumentParser(description='PyTorch MS_COCO validation')
 parser.add_argument('--data', type=str, default='/home/MSCOCO_2014/')
@@ -89,7 +90,8 @@ def validate_multi(val_loader, model, args):
         target = target.max(dim=1)[0]
         # compute output
         with torch.no_grad():
-            output = Sig(model(input.cuda().half())).cpu()
+            with autocast():
+                output = Sig(model(input.cuda().half())).cpu()
 
         # for mAP calculation
         preds.append(output.cpu())
